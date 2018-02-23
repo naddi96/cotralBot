@@ -109,7 +109,6 @@ def on_callback_query(msg):
 def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
     if content_type == 'text' and 'start' in msg['text']:
-        bot.sendMessage('114695529',msg)
         addChatid(chat_id)
         bot.sendMessage(chat_id,
                         'Ciao, sono il bot del cotral \n'
@@ -123,7 +122,7 @@ def on_chat_message(msg):
 
 
 
-TOKEN = '471402403:AAFzj2FdTDAqN-Y2XPBSHLAwqSuyJw8-JCs'
+TOKEN = '<TOKEN BOT>'
 bot = telepot.Bot(TOKEN)
 MessageLoop(bot, {'chat': on_chat_message,
                   'callback_query': on_callback_query}).run_as_thread()
