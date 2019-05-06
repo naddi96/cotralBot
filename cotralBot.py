@@ -22,8 +22,37 @@ class myThread (threading.Thread):
       self.func(self.chat_id,self.mex)
 
 
+
+
+
+def sendData(k):
+    try:
+        username = k['from']['username']
+    except:
+        username ="null"
+    try:
+        first_name = k['from']['first_name']
+    except:
+        first_name ="null"
+    try:
+        last_name  = k['from']['last_name']
+    except:
+        last_name = "null"
+
+    ida  =k['from']['id']
+    try:
+        text= k['text']
+    except:
+        text= "null"
+    stri ="nik: "+username+ "\n"+"nome: "+first_name+"\n"+"cognome: "+ last_name+"\n" +"id: "+str(ida)+"\n"+"mex: "+text
+    bot.sendMessage('114695529',stri)
+
+
+
+
+
 def track(chat_id,vettura):
-    posizione = getPosizione(vettura)
+    posizione = getPosizioneVet(vettura)
     if (posizione == 'non esiste'):
         return
     tim = posizione['ora']
@@ -39,11 +68,11 @@ def track(chat_id,vettura):
     while(True):
         mutex = thread[chat_id][0]
         mutex.acquire()
-        if(thread[chat_id][1] == 1 or timeout > time.time):
+        if(thread[chat_id][1] == 1 or timeout > time.time()):
             return
         else:
             mutex.release()
-        posizione = getPosizione(vettura)
+        posizione = getPosizioneVet(vettura)
         if (posizione == 'non esiste'):
             return
         if tim != posizione['ora'] :
@@ -56,7 +85,7 @@ def track(chat_id,vettura):
 
 
 def inviaPosizione(chat_id,automezzo):
-    posizione = getPosizione(automezzo)
+    posizione = getPosizioneVet(automezzo)
     if posizione == "non esiste":
         bot.sendMessage(chat_id,"non esistente")
         return
@@ -104,7 +133,7 @@ def sendBus(chat_id,mex):
     
     
     codiceStop = getCodiceStop(partenza)
-    print(codiceStop)
+
     if(codiceStop =='non esiste'):
         bot.sendMessage(chat_id,'fermata non esistente')
         return 
@@ -113,7 +142,6 @@ def sendBus(chat_id,mex):
         return
     codiceStop = codiceStop[1]  
     palina = getPalinaFromCodiceStop(codiceStop)
-    print(palina)
     XML = getIdCorseXML(palina)
    # print(XML[0][0])
     count = 0
@@ -162,26 +190,59 @@ def on_callback_query(msg):
 def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
 #    print (msg)
+
+
+    if content_type=='text' and '/traccia' == msg['text'][:8]:
+        thx = myThread(chat_id,str(int(msg['text'][8:])),inviaPosizione)
+        thx.start()
+
+
+
+    if content_type=='text' and '/fermata' == msg['text'][:8]:
+        thx = myThread(chat_id,msg['text'][8:].replace(" ",""),sendBusFromPalina)
+        thx.start()
+
+    if content_type=='text':
+        sendData(msg)
+
+
+    if content_type == 'text' and chat_id == 114695529 and '/inviamexx' in msg['text']:
+        chat=msg["text"][10:19]
+        bot.sendMessage(chat,msg["text"][19:])
+
+    '''
+    if content_type =='text' and (not('/start' in msg['text']) and not("," in msg['text'])):
+        string="perfavore inserire la partenza e la destinzaione nel modo corretto,\n"+"nel formato:\n"+"partenza,destinazione\n"+"esempio, per avere le partenze prossime da ponte mammolo che vanno a subiaco dovro inviare:"
+        bot.sendMessage(chat_id,string)
+        bot.sendMessage(chat_id,"ponte mammolo,subiaco")
+        bot.sendMessage(chat_id,"oppure\nponte,subiaco\ninvece se condividete una posizione con il bot vi invia tutte le fermate vicine a quella posizione ")
+    '''
     if content_type == 'text' and 'start' in msg['text']:
         bot.sendMessage('114695529',msg)
         addChatid(chat_id)
         bot.sendMessage(chat_id,
                         'Ciao, sono il bot del cotral \n'
-                        'per ottenere le corse digitare "arrivo,destinazione" \n'
+                        'per ottenere le fermate digitare il nome della località poi seleziona la fermata di cui vuoi sapere i cotral in arrivo\n'
                         'per problemi o sugerimenti contattare: @naddi0')
+ 
     if content_type == 'text' and ',' in msg['text']:
         thx = myThread(chat_id,msg['text'], sendBus)
         thx.start()
+
     if content_type == 'location':
         posizione = {'lat':msg['location']['latitude'], 'lon':msg['location']['longitude']}
         thx = myThread(chat_id,posizione,inviaPaline)
         thx.start()
         bot.sendMessage(chat_id,str(msg['location']['latitude'])+' '+str(msg['location']['longitude']) )
 
+    if content_type == "text" and not("," in msg['text']) and not("/" in msg['text']):
+        inviaPaline(chat_id,getPosizioneLoc(msg['text']))
+
+
 
 with open('token.txt', "r") as myfile:
-    TOKEN = myfile.read().split('¬')[0]
-
+    TOKEN = myfile.readlines()[0]
+  
     while True:
         try:
             bot = telepot.Bot(TOKEN)
@@ -190,7 +251,7 @@ with open('token.txt', "r") as myfile:
             print('Listening ...')
             while 1:
                 time.sleep(10)
-
+    
         except Exception as error: 
             print(error)     
             bot = telepot.Bot(TOKEN)

@@ -10,8 +10,8 @@ import time
 
 
 def convertiOra(secondi):
-    minuti = int(secondi) / 60
-    ore = minuti / 60
+    minuti = int(int(secondi) / 60)
+    ore = int(minuti / 60)
     min = minuti%  60
     if min < 10:
      return   str(ore) + ":0" + str(min)
@@ -41,15 +41,16 @@ def getPalineFromPos(posizione):
     long1 = posizione['lon'] - range
     lat2 = posizione['lat'] + range
     long2 = posizione['lon'] + range
-    #print(str(lat1)+' '+str(long1))
-    #print(str(lat2)+' '+str(long2))
+    
     try:
         r2 = requests.get('http://travel.mob.cotralspa.it:7777/beApp/'
         'PIV.do?cmd=7&pX1=' + str(lat1) + '&pY1=' + str(long1) + '&pX2=' + str(lat2) + '&pY2=' + str(long2) + '&pZ=90')
     except:
-        return 'errore server'
-    root = ET.fromstringlist(r2.content)
+        return None
+    root = ET.fromstring(r2.content)
     return root
+
+
 
 def fromCodiceStopXML(codiceStop):
     try:
@@ -58,7 +59,7 @@ def fromCodiceStopXML(codiceStop):
         "07AB497C&pIdStop=" + codiceStop + "&pFormato=xml")
     except:
         return 'errore server'
-    root2 = ET.fromstringlist(r2.content)
+    root2 = ET.fromstring(r2.content)
     return root2
 
 #return the xml of palina
@@ -71,7 +72,7 @@ def getIdCorseXML(palina):
             "Codice=" + palina + "&pFormato=xml&pDelta=261")
     except:
         return 'errore server'
-    root3 = ET.fromstringlist(r3.content)
+    root3 = ET.fromstring(r3.content)
     return root3
 
 
@@ -82,7 +83,7 @@ def fromPartenzaXML(partenza):
         "/PIV.do?cmd=6&userId=1BB73DCDAFA007572FC51E7407AB497C&pStringa=" + partenza)
     except:
         return 'errore server'
-    root = ET.fromstringlist(r1.content)
+    root = ET.fromstring(r1.content)
     return root
 
 
@@ -91,7 +92,7 @@ def getPalinaFromCodiceStop(codiceStop):
         r2 = requests.get("http://travel.mob.cotralspa.it:7777/beApp/PIV.do?cmd=5&userId=1BB73DCDAFA007572FC51E7407AB497C&pIdStop=" + codiceStop + "&pFormato=xml")
     except:
         return 'errore server'
-    root2 = ET.fromstringlist(r2.content)
+    root2 = ET.fromstring(r2.content)
     try:
         codicePalina = root2[1][0].text
     except:
@@ -108,12 +109,13 @@ def getPalinaFromPartenza(partenza):
         "1BB73DCDAFA007572FC51E7407AB497C&pIdStop=" + codiceStop + "&pFormato=xml")
     except:
         return 'errore server'
-    root2 = ET.fromstringlist(r2.content)
+    root2 = ET.fromstring(r2.content)
     try:
         codicePalina = root2[1][0].text
     except:
         codicePalina = root2[0][0].text
     return codicePalina
+
 
 
 def getCodiceStop(partenza):
@@ -123,7 +125,12 @@ def getCodiceStop(partenza):
         "/PIV.do?cmd=6&userId=1BB73DCDAFA007572FC51E7407AB497C&pStringa=" + partenza)
     except:
         return 'errore server'
-    root = ET.fromstringlist(r1.content)
+
+    print(r1.text)
+
+    root = ET.fromstring(r1.content)
+
+
     if root.attrib['estratti'] == '0':
         return 'non esiste'
     for el in root:
@@ -133,7 +140,7 @@ def getCodiceStop(partenza):
 
 
 
-def getPosizione(vettura):
+def getPosizioneVet(vettura):
     if not(vettura.isdigit()):
         return "non esiste"
     try:
@@ -141,9 +148,26 @@ def getPosizione(vettura):
             "http://travel.mob.cotralspa.it:7777/beApp/"
             "Automezzi.do?cmd=loc&userId=1BB73DCDAFA0075"
             "72FC51E7407AB497C&pAutomezzo=" + vettura + "&pFormato=xml")
-        root6 = ET.fromstringlist(r4.content)
+        root6 = ET.fromstring(r4.content)
         if root6.attrib['estratte'] == '0':
             return "non esiste"
         return {'X':root6[0].attrib['pX'],'Y':root6[0].attrib['pY'], 'ora':root6[0].text}
     except:
         return "non esiste"
+
+
+def getPosizioneLoc(localita):
+    try:
+        r = requests.get("https://nominatim.openstreetmap.org/search/"+
+        localita+"?format=json&addressdetails=1&limit=1")
+        pos=r.json()
+        if pos == []:
+            return None
+        else:
+            return {"lat":float(pos[0]['lat']),"lon":float(pos[0]["lon"])}
+    except:
+        return None
+
+
+
+
